@@ -1,1 +1,1 @@
-# KD_course_project
+# KD course project
