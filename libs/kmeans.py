@@ -18,8 +18,7 @@ class cluster:
 # --- Single Node ---
 # -------------------
 class node:
-    def __init__(self, coordinates, real_label, info):
-        self.info = info
+    def __init__(self, coordinates, real_label):
         # Coordinates of the node
         self.coordinates = coordinates
         # Real label of the node (generated or real dataset)
