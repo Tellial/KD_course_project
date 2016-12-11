@@ -56,7 +56,7 @@ for i in range(len(vgsales)):
         vgsales[i][n] = float(vgsales[i][n])
 
     # Select only NA_Sales and EU_sales
-    nodes.append(dbscan_node([vgsales[i][6], vgsales[i][7]], vgsales[i][5], vgsales[i][:6]))
+    nodes.append(dbscan_node([vgsales[i][6], vgsales[i][7], vgsales[i][8], vgsales[i][9]], vgsales[i][5], vgsales[i][:6]))
 
 cluster = 1
 try:
@@ -72,18 +72,17 @@ try:
                 nodes[i].classification = cluster
 
             while len(neighborNodes) > 0:
-                newNeighborNodes = regionQuery(nodes[0], nodes, EPS)
+                newNeighborNodes = regionQuery(nodes[neighborNodes[0]], nodes, EPS)
                 if len(newNeighborNodes) >= MIN_POINTS:
                     for j in range(0, len(newNeighborNodes)):
-                        if nodes[newNeighborNodes[j]] == None or nodes[newNeighborNodes[j]] == 0:
-                            if nodes[newNeighborNodes[j]] == None:
+                        if nodes[newNeighborNodes[j]].classification == None or nodes[newNeighborNodes[j]].classification == 0:
+                            if nodes[newNeighborNodes[j]].classification == None:
                                 neighborNodes.append(newNeighborNodes[j])
-                            nodes[newNeighborNodes[j]] = cluster
+                            nodes[newNeighborNodes[j]].classification = cluster
                 neighborNodes = neighborNodes[1:]
 
             cluster = cluster + 1
-        print node.info
-
+        
     with open(sys.argv[4], 'w') as csvfile:
         fieldnames = ["Number", "Name", "Platform", "Year", "Genre", "Publisher", "Cluster"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=';', lineterminator='\n')
@@ -101,4 +100,5 @@ try:
             })
 
 except IOError as e:
+    print "Failed to open file: " + sys.argv[4] + " for writing"
     exit(0)
