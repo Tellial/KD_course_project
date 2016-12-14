@@ -120,7 +120,7 @@ agg.cluster(vgsales, C, _x, _y, _z)
 axes = ['NA_Sales', 'EU_Sales', 'JP_Sales', 'Other_Sales', 'Global_Sales']
 
 # Sets range of axes (zoom)
-lim = 1
+lim = 10
 
 try:
     colors = {}
