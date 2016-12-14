@@ -1,16 +1,21 @@
 import math
 import heapq
-from sets import Set
 import copy
+import sys
 
+#----------------------------------------------------------------------------------------------
+# This file is used by hierarchical_agglomerative_clustering.py
+# (Command line tool for analyzing dataset Video Game Sales)
+#----------------------------------------------------------------------------------------------
 
 # Min heap for inter-cluster distances and their associated clusters (wrapped in tuples)
 min_dist_heap = []
 
-#--------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 # DISTANCE FUNCTION
-# Distance function: returns euclidean distance (average linkage) between two clusters wrt x, y, z
-#---------------------------------------------------------------------------------------------------
+# Distance function: returns euclidean distance (average linkage) between two clusters wrt x,y,z
+#----------------------------------------------------------------------------------------------
+
 def distance2D(i, j, vgsales, _x, _y, _z):
     x1 = float((vgsales[i][_x]))
     y1 = float((vgsales[i][_y]))
@@ -21,12 +26,17 @@ def distance2D(i, j, vgsales, _x, _y, _z):
     
     return float(math.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2))
 
-#---------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 # INITIALIZE DISTANCE MATRIX
 # Calculate distances between all row indices once (stored in a minheap)
-#---------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
+
 def init_dist_matrix(vgsales, _x, _y, _z) :
+
     rows = len(vgsales)
+
+    dist_matrix = [[0] * rows for i in range (rows)]
+
     for i in range (0, rows) :
         for j in range (i+1, rows) :
             if (i != j) :
@@ -34,10 +44,11 @@ def init_dist_matrix(vgsales, _x, _y, _z) :
                 dist = (d, i, j)
                 heapq.heappush(min_dist_heap, dist)
 
-#-------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 # MERGE FUNCTION
-# Merge function: merges clusters a and b. Updates cluster centre and distances to other clusters.
-#--------------------------------------------------------------------------------------------------
+# Merges clusters a and b. Updates cluster centre and distances to other clusters.
+#----------------------------------------------------------------------------------------------
+
 def merge(a, b, vgsales, _x, _y, _z) :
     rows = len(vgsales)
 
@@ -49,50 +60,61 @@ def merge(a, b, vgsales, _x, _y, _z) :
     vgsales[a][_x] = (a_size/union_size) * (vgsales[a][_x]) + (b_size/union_size) * (vgsales[b][_x])
     vgsales[a][_y] = (a_size/union_size) * (vgsales[a][_y]) + (b_size/union_size) * (vgsales[b][_y])
     vgsales[a][_z] = (a_size/union_size) * (vgsales[a][_z]) + (b_size/union_size) * (vgsales[b][_z])
-
     # Merge clusters into vgsales[a][0]
-    vgsales[a][0] = vgsales[a][0].union(vgsales[b][0])
+    for i in range (len(vgsales[b][0])) :
+        vgsales[a][0].append(vgsales[b][0][i])
 
     # Mark the cluster label column with -1: the row has been 'used' 
     vgsales[b][12] = -1 
 
-    # Calculate distances between this new cluster (=a) and all others (=index) and push onto heap
+    # Calculate distances between new cluster (=a) and all others (=index) and push onto heap
     index = a - 1
     for z in range (1, rows) :
-        # If entry has not been wiped, there is a cluster at vgsales[index]
         if vgsales[index][12] != -1 :
             dist = (distance2D(a, index, vgsales, _x, _y, _z), a, index)
             heapq.heappush(min_dist_heap, dist)
         index = index - 1
 
-
 #---------------------------------------------------------------------------------------------
-# CLUSTER
+# CLUSTER FUNCTION
 # Pop minimum distances from heap and merge associated clusters until end criterion fulfilled
 #----------------------------------------------------------------------------------------------
+
 def cluster(vgsales, C, _x, _y, _z) :
-    clusterCount = len(vgsales)
+ 
     rows = len(vgsales)
+    clusterCount = rows
     print 'Starts with %d singletons' % (clusterCount)
-
+   
     while clusterCount > C :
-
+        
         min_dist = heapq.heappop(min_dist_heap)
-            
-        # If clusters at the endpoints of min_dist still exist and have not been merged elsewhere, merge them
-        if vgsales[min_dist[1]][12] != -1 and vgsales[min_dist[2]][12] != -1 :
-            merge(min_dist[1], min_dist[2], vgsales, _x, _y, _z)
+        coph_d = min_dist[0]
+
+        # Row indices of the clusters with d between them       
+        c1_index = min_dist[1]
+        c2_index = min_dist[2]
+
+        # If clusters at the indices still exist and have not been merged elsewhere, merge
+        if vgsales[c1_index][12] != -1 and vgsales[c2_index][12] != -1 :
+
+            # List of ranks belonging to each cluster 
+            ranks_in_c1 = vgsales[c1_index][0]
+            ranks_in_c2 = vgsales[c2_index][0]
+             
+            # Merge both clusters' contents onto vgsales[c1_index][0]
+            merge(c1_index, c2_index, vgsales, _x, _y, _z)
             clusterCount = clusterCount - 1
-            if (clusterCount % int(rows/20) == 0) :
+        
+            # Report on progress
+            if (clusterCount % 100 == 0) :
                 print '%d clusters remaining' % (clusterCount)
-            #print 'cC %d' % (clusterCount)
 
     # Find indices of vgsales containing clusters
     cluster_inds = []
     label = int(1)
-    # Label clusters 1 - C (label goes in vgsales[i][12]
+    # Label clusters 1 - C (label goes in vgsales[i][12])
     for i in range (0, rows) :
-        # If this row represents a cluster
         if (vgsales[i][12] != -1) :
             vgsales[i][12] = int(label) 
             cluster_inds.append(i)
@@ -128,4 +150,7 @@ def cluster(vgsales, C, _x, _y, _z) :
                         vgsales[z][12] = clusterid
 
     print 'Finished with %d clusters' % (clusterCount)
-    
+   
+#----------------------------------------------------------------------------------------------
+# end
+   

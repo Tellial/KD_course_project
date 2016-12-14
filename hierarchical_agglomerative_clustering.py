@@ -1,12 +1,18 @@
 import sys
-from sets import Set
 import csv
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import random
-from scipy.stats.stats import pearsonr
 import libs.agglomerative as agg
 
+#----------------------------------------------------------------------------------------------------------
+# Knowledge discovery coursework, Inka Simola
+#
+# Command line tool for analyzing dataset Video Game Sales
+# https://www.kaggle.com/gregorut/videogamesales
+#
+# Command line arguments:
+#
 # sys.argv[1] = target file for saved csv 
 # sys.argv[2] = number of clusters (int)
 # sys.argv[3] = x index [6-10]
@@ -14,14 +20,11 @@ import libs.agglomerative as agg
 # sys.argv[5] = z index [6-10]
 # sys.argv[6] = data reduction attribute name (optional) [2-5]
 # sys.argv[7] = data reduction attribute value (optional) 
-
-# No error checking for sys.argv[7], please take care to provide correct values from vgsales.csv
-# 'Rank' attribute from vgsales.csv dataset is used to identify each game. No two have the same rank. 
-
-argc = len(sys.argv)
-
-global errorMessage
-errorMessage = 'Help:\nclustering.py [filename.csv] [nof_clusters(int)] [x_index(int)] [y_index(int)] [z_index(int)]\nclustering.py [filename.csv] [nof_clusters(int)] [x_index(int)] [y_index(int)] [z_index(int)] [attribute_index] [attribute_value]\n2=Platform, 3=Year, 4=Genre, 5=Publisher, 6=NA_Sales, 7=EU_Sales, 8=JP_Sales, 9=Other_Sales, 10=Global_Sales\nAcceptable x_index and y_index values: 6-10, all must be different\nAcceptable attribute_index values: 2-5\nFor acceptable attribute_values see dataset vgsales.csv'
+#
+# No error checking is implemented for sys.argv[7] (attribute name).
+# Please take care to provide valid attribute values (e.g. 'Nintendo', 'Puzzle', '2005')
+# The attribute 'Rank' is used to identify each game.
+#----------------------------------------------------------------------------------------------------------
 
 # Attribute for narrowing dataset: 2 for Platform, 3 for Year, 4 for Genre, 5 for Publisher
 global attribute
@@ -31,7 +34,15 @@ attribute = int(0)
 global attribute_value
 attribute_value = ''
 
+global errorMessage
+errorMessage = 'Help:\nclustering.py [filename.csv] [nof_clusters(int)] [x_index(int)] [y_index(int)] [z_index(int)]\nclustering.py [filename.csv] [nof_clusters(int)] [x_index(int)] [y_index(int)] [z_index(int)] [attribute_index] [attribute_value]\n2=Platform, 3=Year, 4=Genre, 5=Publisher, 6=NA_Sales, 7=EU_Sales, 8=JP_Sales, 9=Other_Sales, 10=Global_Sales\nAcceptable x_index and y_index values: 6-10, all must be different\nAcceptable attribute_index values: 2-5\nFor acceptable attribute_values see dataset vgsales.csv'
+
+#----------------------------------------------------------------------------------------------------------
+# CHECK FOR INVALID ARGUMENTS
+#----------------------------------------------------------------------------------------------------------
+
 # Ensure correct argument count
+argc = len(sys.argv)
 if not (argc == 6 or argc == 8) :
     print errorMessage
     exit()
@@ -60,7 +71,10 @@ if (argc == 8 and not (attribute >= 2 and attribute <= 5)) :
     print errorMessage
     exit()
 
-# Data import
+#----------------------------------------------------------------------------------------------------------
+# IMPORT DATA
+#----------------------------------------------------------------------------------------------------------
+
 temp_import = []
 vgsales = []
 with open('data/vgsales.csv') as csvfile:
@@ -71,8 +85,9 @@ with open('data/vgsales.csv') as csvfile:
         temp_import.append(row) 
 rows = len(temp_import)
 
-
-# DATA CLEANING AND REDUCTION
+#----------------------------------------------------------------------------------------------------------
+# CLEAN / REDUCE DATA
+#----------------------------------------------------------------------------------------------------------
 
 # Prune items with irrelevant attributes and/or missing information 
 for i in range (0, rows) :
@@ -84,7 +99,11 @@ for i in range (0, rows) :
         vgsales.append(temp_import[i])
 
 rows = len(vgsales)
-print 'post-reduction rows %d' % (rows)
+print 'After data reduction %d rows remain' % (rows)
+
+if (rows < C) :
+    print 'Not enough rows (%d) to form %d clusters' % (rows, C)
+    exit()
 
 global clusterCount
 clusterCount = rows
@@ -104,63 +123,85 @@ for z in range (0,rows) :
     vgsales[z][11] = int(vgsales[z][11])
     vgsales[z][12] = int(vgsales[z][12])
 
-# Convert each rank number into a set containing the rank number and duplicate rank number into index 11 as an int
+# Duplicate rank number into index 11 as an int. Convert each rank number into a list containing the rank number. 
 for i in range (0, rows) :
     rank = int(vgsales[i][0])
-    vgsales[i][0] = Set ([rank])
+    vgsales[i][0] = [rank]
     vgsales[i][11] = rank
 
-print 'Initializing distance matrix'
+#----------------------------------------------------------------------------------------------------------
+# CLUSTER DATA
+#----------------------------------------------------------------------------------------------------------
 
+# Initialize distance matrix
+print 'Initializing distance matrix'
 agg.init_dist_matrix(vgsales, _x, _y, _z)
 
+# Cluster data points until C clusters remain
 agg.cluster(vgsales, C, _x, _y, _z)
 
-# Write the result of the clustering to a csv file
+#----------------------------------------------------------------------------------------------------------
+# OUTPUT RESULTS USING MATPLOTLIB
+#----------------------------------------------------------------------------------------------------------
+
+# Write results to csv file and 3D plot
 axes = ['NA_Sales', 'EU_Sales', 'JP_Sales', 'Other_Sales', 'Global_Sales']
+lim = '42.0'
+zoomError = 'Decimal number required, e.g. 11.0\n'
 
-# Sets range of axes (zoom)
-lim = 10
+# Keep asking for new zoom values
+while (lim != 'q') :
+    try :
+        lim = raw_input("\nEnter new axis cutoff value for plot:\n(Default 42.0. Or press q to quit)\n")
+    except ValueError :
+        print zoomError
+    
+    if (lim == 'q') :
+        print 'bye\n'
+        exit()
 
-try:
-    colors = {}
-    fig = plt.figure(figsize=(10,10))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.set_title("",fontsize=14)
-    ax.set_xlabel((axes[_x - 6]),fontsize=12)
-    ax.set_ylabel((axes[_y - 6]),fontsize=12)
-    ax.set_zlabel((axes[_z -6]), fontsize=12)
-    ax.grid(True,linestyle='-',color='0.75')
-    ax.autoscale_view(True,True,True)
-    ax.set_xlim([0, lim])
-    ax.set_ylim([0, lim])
-    ax.set_zlim([0, lim])
+    else :
+        lim = float(lim)    
+        try:
+            colors = {}
+            fig = plt.figure(figsize=(10,10))
+            ax = fig.add_subplot(111, projection='3d')
+            ax.set_title("",fontsize=14)
+            ax.set_xlabel((axes[_x - 6]),fontsize=12)
+            ax.set_ylabel((axes[_y - 6]),fontsize=12)
+            ax.set_zlabel((axes[_z -6]), fontsize=12)
+            ax.grid(True,linestyle='-',color='0.75')
+            ax.autoscale_view(True,True,True)
+            ax.set_xlim([0, lim])
+            ax.set_ylim([0, lim])
+            ax.set_zlim([0, lim])
 
-    with open(sys.argv[1], 'w') as csvfile:
-        fieldnames = ["Number", "Name", "Platform", "Year", "Genre", "Publisher", "Cluster"]
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=';', lineterminator='\n')
+            with open(sys.argv[1], 'w') as csvfile:
+                fieldnames = ["Number", "Name", "Platform", "Year", "Genre", "Publisher", "Cluster"]
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=';', lineterminator='\n')
 
-        writer.writeheader()
-        for i in range(0, len(vgsales)):
-            writer.writerow({
-                'Number': vgsales[i][11],
-                'Name' : vgsales[i][1],
-                'Platform' : vgsales[i][2],
-                'Year' : vgsales[i][3],
-                'Genre' : vgsales[i][4],
-                'Publisher' : vgsales[i][5],
-                'Cluster' : vgsales[i][12]
-            })
+                writer.writeheader()
+                for i in range(0, len(vgsales)):
+                    writer.writerow({
+                        'Number': vgsales[i][11],
+                        'Name' : vgsales[i][1],
+                        'Platform' : vgsales[i][2],
+                        'Year' : vgsales[i][3],
+                        'Genre' : vgsales[i][4],
+                        'Publisher' : vgsales[i][5],
+                        'Cluster' : vgsales[i][12]
+                    })
 
-            if str(vgsales[i][12]) not in colors:
-                colors[str(vgsales[i][12])] = ((random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1)))
+                    if str(vgsales[i][12]) not in colors:
+                        colors[str(vgsales[i][12])] = ((random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1)))
 
-            ax.scatter(vgsales[i][_x], vgsales[i][_y], vgsales[i][_z], c=colors[str(vgsales[i][12])])
+                    ax.scatter(vgsales[i][_x], vgsales[i][_y], vgsales[i][_z], c=colors[str(vgsales[i][12])])
 
-    # Change the plot area's size
+            fig.savefig('3dplot_C%d_%d%d%d_%s_%f.png' % (C, _x, _y, _z, attribute_value, lim))
+        except IOError as e:
+            print "Failed to open file: " + sys.argv[1] + " for writing"
+            exit(0)
 
-    fig.savefig('3dplot_C%d_%d%d%d_%s_%f.png' % (C, _x, _y, _z, attribute_value, lim))
-except IOError as e:
-    print "Failed to open file: " + sys.argv[1] + " for writing"
-    exit(0)
+#----------------------------------------------------------------------------------------------------------
+# end
 
