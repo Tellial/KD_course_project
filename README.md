@@ -1,2 +1,2 @@
 # KD course project
-# ((test))
+# See documentation folder

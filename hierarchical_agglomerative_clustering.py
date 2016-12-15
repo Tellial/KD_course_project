@@ -38,7 +38,7 @@ global errorMessage
 errorMessage = 'Help:\nclustering.py [filename.csv] [nof_clusters(int)] [x_index(int)] [y_index(int)] [z_index(int)]\nclustering.py [filename.csv] [nof_clusters(int)] [x_index(int)] [y_index(int)] [z_index(int)] [attribute_index] [attribute_value]\n2=Platform, 3=Year, 4=Genre, 5=Publisher, 6=NA_Sales, 7=EU_Sales, 8=JP_Sales, 9=Other_Sales, 10=Global_Sales\nAcceptable x_index and y_index values: 6-10, all must be different\nAcceptable attribute_index values: 2-5\nFor acceptable attribute_values see dataset vgsales.csv'
 
 #----------------------------------------------------------------------------------------------------------
-# CHECK FOR INVALID ARGUMENTS
+# CHECK FOR INVALID COMMAND LINE ARGUMENTS
 #----------------------------------------------------------------------------------------------------------
 
 # Ensure correct argument count
@@ -61,8 +61,8 @@ except ValueError:
     print errorMessage
     exit()
 
-# Check validity of xyz arguments (within range [6-10] and all values must be different from each other
-if not (_x >= 6 and _x <= 10 and _y >= 6 and _y <= 10 and ((_z >= 6 and _z <= 10) or (_z == 0)) and _x != _y and _x != _z and _y != _z) :
+# Check validity of xyz arguments (within range [6-10])
+if not (_x >= 6 and _x <= 10 and _y >= 6 and _y <= 10 and _z >= 6 and _z <= 10) :
     print errorMessage
     exit()
 
@@ -152,13 +152,15 @@ zoomError = 'Decimal number required, e.g. 11.0\n'
 # Keep asking for new zoom values
 while (lim != 'q') :
     try :
-        lim = raw_input("\nEnter new axis cutoff value for plot:\n(Default 42.0. Or press q to quit)\n")
+        lim = raw_input("\nEnter new maximum value for coordinate axes x, y, z (e.g. 40.0):\n(q to quit)\n")
     except ValueError :
         print zoomError
     
     if (lim == 'q') :
         print 'bye\n'
         exit()
+    elif (float(lim) <= 0) :
+        print 'Enter a decimal number greater than zero'
 
     else :
         lim = float(lim)    

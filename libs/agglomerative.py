@@ -4,6 +4,8 @@ import copy
 import sys
 
 #----------------------------------------------------------------------------------------------
+# Knowledge discovery coursework, Inka Simola
+#
 # This file is used by hierarchical_agglomerative_clustering.py
 # (Command line tool for analyzing dataset Video Game Sales)
 #----------------------------------------------------------------------------------------------
@@ -16,7 +18,7 @@ min_dist_heap = []
 # Distance function: returns euclidean distance (average linkage) between two clusters wrt x,y,z
 #----------------------------------------------------------------------------------------------
 
-def distance2D(i, j, vgsales, _x, _y, _z):
+def distance3D(i, j, vgsales, _x, _y, _z):
     x1 = float((vgsales[i][_x]))
     y1 = float((vgsales[i][_y]))
     z1 = float((vgsales[i][_z]))
@@ -40,7 +42,7 @@ def init_dist_matrix(vgsales, _x, _y, _z) :
     for i in range (0, rows) :
         for j in range (i+1, rows) :
             if (i != j) :
-                d = distance2D(i,j, vgsales, _x, _y, _z)
+                d = distance3D(i,j, vgsales, _x, _y, _z)
                 dist = (d, i, j)
                 heapq.heappush(min_dist_heap, dist)
 
@@ -71,7 +73,7 @@ def merge(a, b, vgsales, _x, _y, _z) :
     index = a - 1
     for z in range (1, rows) :
         if vgsales[index][12] != -1 :
-            dist = (distance2D(a, index, vgsales, _x, _y, _z), a, index)
+            dist = (distance3D(a, index, vgsales, _x, _y, _z), a, index)
             heapq.heappush(min_dist_heap, dist)
         index = index - 1
 
