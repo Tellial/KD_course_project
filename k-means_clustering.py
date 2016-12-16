@@ -3,8 +3,8 @@ import csv
 import libs.kmeans as kmeans
 
 
-if len(sys.argv) != 4:
-    print "Use \"python k-means_clustering.py [CLUSTER_COUNT] [INPUT_FILE] [OUTPUT_FILE]\""
+if len(sys.argv) != 3:
+    print "Use \"python k-means_clustering.py [CLUSTER_COUNT] [OUTPUT_FILE]\""
     exit(0)
 
 # Cluster count used for kmeans
@@ -17,14 +17,14 @@ except ValueError:
 # Try to read the data
 vgsales = []
 try:
-    with open(sys.argv[2]) as csvfile:
+    with open("data/vgsales.csv") as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
         # Skip the first row with the headers
         next(reader, None)
         for row in reader:
             vgsales.append(row)
 except IOError as e:
-    print "Failed to open file: " + sys.argv[1] + " for reading"
+    print "Failed to open file data/vgsales.csv for reading"
     exit(0)
 
 # Create nodes to be used for clustering from all the dataset points
@@ -41,7 +41,7 @@ print("Finished clustering in: " + str(results[2]) + " iterations.")
 
 # Write the result of the k-means clustering to a csv file
 try:
-    with open(sys.argv[3], 'w') as csvfile:
+    with open(sys.argv[2], 'w') as csvfile:
         fieldnames = ["Number", "Name", "Platform", "Year", "Genre", "Publisher", "Cluster"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=';', lineterminator='\n')
 
